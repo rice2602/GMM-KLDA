@@ -14,6 +14,17 @@ import clip
 from PIL import Image
 import os
 
+
+sigma = 1e-5
+
+def _compute_rff(x,d,D,sigma,device):
+    omega = torch.normal(0,torch.sqrt(torch.tensor(2 * sigma,dtype=torch.float32)),(d,D)).to(device)
+    b = (torch.rand(D) * 2  * torch.pi).to(device)
+    scaling_factor = torch.sqrt(torch.tensor(2.0/D,dtype=torch.float32,device=device))
+    return scaling_factor * torch.cos(x @ omega + b)
+
+
+
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/16", device=device)
@@ -68,6 +79,8 @@ for task_id, name in enumerate(all_name):
 
             text_features_label = text_features_label / text_features_label.norm(dim=1, keepdim=True)
             predict_feature = predict_feature / predict_feature.norm(dim=1, keepdim=True)
+            text_features_label = _compute_rff(text_feature_label,d = text_features_label.shape[1],D=5000,sigma=sigma,device=device)
+            predict_feature = _compute_rff(predict_feature,d = predict_feature.shape[1],D = 5000,sigma=sigma,device=device)
 
         sim  = predict_feature @ text_features_label.T
         real_label = torch.ones(len(msg_list))
