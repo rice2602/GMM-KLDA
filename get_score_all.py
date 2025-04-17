@@ -3,8 +3,7 @@ all_name_list = ['vase', 'rugby_ball', 'starfish', 'scuba_diver', 'italian_greyh
 
 
 sults = '/root/siton-gpfs-caoxusheng/code/mini-CIL/results/imgr20_20_3e6_batch2_epoch2_order3_2000exp_re/'
-path_results = '/home/ubuntu/code/GMM_camera/GMM/results/imgr20_20_3e6_batch2_epoch2_order3_2000exp_re/'
-
+path_results = '/root/GMM/minigpt4/output/20250415153/'
 initial = 20
 increment = 20
 task_num = 10
@@ -15,12 +14,14 @@ from PIL import Image
 import os
 
 
-sigma = 1e-5
+sigma = 1e-2
 
-def _compute_rff(x,d,D,sigma,device):
-    omega = torch.normal(0,torch.sqrt(torch.tensor(2 * sigma,dtype=torch.float32)),(d,D)).to(device)
-    b = (torch.rand(D) * 2  * torch.pi).to(device)
-    scaling_factor = torch.sqrt(torch.tensor(2.0/D,dtype=torch.float32,device=device))
+
+def _compute_rff(x, d, D, sigma, device):
+    x = x.to(torch.float32)  
+    omega = torch.normal(0, torch.sqrt(torch.tensor(2 * sigma, dtype=torch.float32)), (d, D)).to(device)
+    b = (torch.rand(D, dtype=torch.float32) * 2 * torch.pi).to(device)
+    scaling_factor = torch.sqrt(torch.tensor(2.0 / D, dtype=torch.float32, device=device))
     return scaling_factor * torch.cos(x @ omega + b)
 
 
@@ -29,9 +30,15 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/16", device=device)
 
+
 all_name = os.listdir(path_results)
-all_name.sort()
+
+all_name = [f for f in all_name if f.startswith('test_') and f.split('.')[0][5:].isdigit()]
+
 all_name = sorted(all_name, key=lambda x: int(x.split('.')[0][5:]))
+all_name = all_name[:1]
+
+print(all_name)
 all_mean  = []
 
 for task_id, name in enumerate(all_name):
@@ -77,10 +84,11 @@ for task_id, name in enumerate(all_name):
             text_features_label = model.encode_text(text)
             predict_feature = model.encode_text(predict_text)
 
-            text_features_label = text_features_label / text_features_label.norm(dim=1, keepdim=True)
-            predict_feature = predict_feature / predict_feature.norm(dim=1, keepdim=True)
-            text_features_label = _compute_rff(text_feature_label,d = text_features_label.shape[1],D=5000,sigma=sigma,device=device)
+            #text_features_label = text_features_label / text_features_label.norm(dim=1, keepdim=True)
+            #predict_feature = predict_feature / predict_feature.norm(dim=1, keepdim=True)
+            text_features_label = _compute_rff(text_features_label,d = text_features_label.shape[1],D=5000,sigma=sigma,device=device)
             predict_feature = _compute_rff(predict_feature,d = predict_feature.shape[1],D = 5000,sigma=sigma,device=device)
+            
 
         sim  = predict_feature @ text_features_label.T
         real_label = torch.ones(len(msg_list))
