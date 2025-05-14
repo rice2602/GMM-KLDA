@@ -14,7 +14,7 @@ from PIL import Image
 import os
 
 
-sigma = 1e-2
+sigma = 5e-6
 
 
 def _compute_rff(x, d, D, sigma, device):
@@ -86,7 +86,7 @@ for task_id, name in enumerate(all_name):
 
             #text_features_label = text_features_label / text_features_label.norm(dim=1, keepdim=True)
             #predict_feature = predict_feature / predict_feature.norm(dim=1, keepdim=True)
-            text_features_label = _compute_rff(text_features_label,d = text_features_label.shape[1],D=5000,sigma=sigma,device=device)
+            text_features_label = _compute_rff(text_features_label,d = text_features_label.shape[1],D=3000,sigma=sigma,device=device)
             predict_feature = _compute_rff(predict_feature,d = predict_feature.shape[1],D = 5000,sigma=sigma,device=device)
             
 
